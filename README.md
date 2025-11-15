@@ -78,3 +78,54 @@ Once setup is complete, you can start the Q&A system from your terminal.
     
     Ask a question (or 'exit' to quit): exit
     ```
+
+
+## Troubleshooting & Alternatives(If Mistral model Fails to load or Your Ollama Server is Crashing)
+
+### 1. Using a Lighter Model (To Prevent Freezing)
+
+If your computer hangs or freezes when you ask a question, you're running out of RAM. The 4.1GB `mistral` model is too big.
+
+**Solution:** Use the much smaller `tinyllama` model.
+
+1.  **Pull the model:**
+    ```bash
+    ollama pull tinyllama
+    ```
+2.  **Edit `main.py`:**
+    Change the `LLM_MODEL` variable near the top of the file:
+    ```python
+    # LLM_MODEL = "mistral"
+    LLM_MODEL = "tinyllama"
+    ```
+3.  Re-run `python main.py`. It will now be much faster and won't hang.
+
+### 2. Forcing CPU-Only Mode (If the App Crashes)
+
+If your `ollama serve` log shows a `ggml-metal` error and crashes, you need to stop it from using your GPU.
+
+**Temporary Fix:** Start the server with a prefix:
+`OLLAMA_NUM_GPU=0 ollama serve`
+
+**Permanent Fix (Recommended):**
+You can create a custom, CPU-only version of your model.
+
+1.  **Create a `Modelfile`:**
+    This command creates a file named `TinyLlama_CPU_Only` that acts as a "recipe". It inherits from `tinyllama` and sets the GPU parameter to 0.
+
+    ```bash
+    echo "FROM tinyllama
+    PARAMETER num_gpu 0" > Modelfile_CPU_Only
+    ```
+2.  **Build the new CPU-only model:**
+    This reads your recipe and builds a *new* model called `tinyllama-cpu`.
+
+    ```bash
+    ollama create tinyllama-cpu -f Modelfile_CPU_Only
+    ```
+3.  **Edit `main.py`:**
+    Now, just point your script to this new, permanently safe model:
+    ```python
+    LLM_MODEL = "tinyllama-cpu"
+    ```
+4.  Now you can just run `ollama serve` normally, and when your script calls `tinyllama-cpu`, it will *always* run on the CPU and never crash.
